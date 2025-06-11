@@ -1,69 +1,68 @@
-# Grover's algorithm
+import numpy as np
+import math
+from scipy.linalg import expm
 from qiskit import QuantumRegister, QuantumCircuit, ClassicalRegister
 from qiskit import BasicAer, execute
-# 状態重ね合わせ
-def superposition(nqubits):
-    for qubit in range(nqubits):
-        qc.h(qubit)
+from qiskit.circuit.library import UnitaryGate
 
-    
-# オラクル    
-def oracle(nqubits):
-    #qc.cz(0, 1)
-    qc.x(2)
-    qc.x(0)
-    # マルチ制御Zゲートをかけます
-    qc.h(nqubits-1)
-    qc.mct(list(range(nqubits-1)), nqubits-1)  # マルチ制御トフォリ
-    qc.h(nqubits-1)
-    qc.x(2)
-    qc.x(0)
+t = 1 # オラクルの解の個数
+n = 15 # 量子ビットの数
+N = 2**n 
 
+theta_t = math.asin(math.sqrt(t/N))
+print(theta_t)
+repetition = math.ceil(math.pi/(4*theta_t)) # 繰り返し回数
+print(repetition)
+
+# groverのコード    
+
+q = QuantumRegister(n+1, "q")
+
+c = ClassicalRegister(n+1, "c")
+# 量子回路の作成
+qc = QuantumCircuit(q, c)
+
+
+qc.x(q[0])
+
+
+for i in range(n+1):
+    # スーパーポジションを作成
+    qc.h(q[i])
     
-def diffuser(nqubits):
-    for qubit in range(nqubits):
-        qc.h(qubit)
-        qc.x(qubit)
+for i in range(repetition):    
+    qc.mcx([q[i+1] for i in range(n)], q[0]) # オラクルのゲート
+
+    #groveroperator
+    for j in range(n):
+        qc.h(q[j+1])
+    for j in range(n):
+        qc.x(q[j+1])
         
-    # マルチ制御Zゲートをかけます
-    qc.h(nqubits-1)
-    qc.mct(list(range(nqubits-1)), nqubits-1)  # マルチ制御トフォリ
-    qc.h(nqubits-1)
-    
-    for qubit in range(nqubits):
-        qc.x(qubit)
-        qc.h(qubit)
-
+    qc.h(q[1])
+    qc.mcx([q[i+1] for i in range(1, n)], q[1])   
+    qc.h(q[1])    
         
-# 測定
-def measure(nqubits):
-    for qubit in range(nqubits):
-        qc.measure(qubit, qubit)
-    
-    
-nqubits = 4
-qc = QuantumCircuit(nqubits, nqubits)
+    for j in range(n):
+        qc.x(q[j+1])
+    for j in range(n):
+        qc.h(q[j+1])
+        
+#測定        
+for i in range(n):
+    qc.measure(q[i+1], c[i+1])                    
 
-superposition(nqubits)
-qc.barrier(list(range(nqubits)))
 
-for num in range(2):
-    oracle(nqubits)
-    qc.barrier(list(range(nqubits)))
-    diffuser(nqubits)
-    qc.barrier(list(range(nqubits)))
-
-measure(nqubits)
-
-    
-plt=qc.draw(output='mpl', style="nicely")
-
-#plt.show()
-
-# 画像を保存
-plt.savefig('grover.png')
-svsim=BasicAer.get_backend("statevector_simulator")
-result=execute(qc,svsim).result()
-statevector=result.get_statevector(qc)
-# 測定結果を表示
-print(statevector)
+# 量子回路の実行
+backend = BasicAer.get_backend('qasm_simulator')
+job = execute(qc, backend, shots=1024)
+result = job.result()
+# 結果の取得と表示
+counts = result.get_counts(qc)
+print("\nMeasurement results:")
+print(counts)
+# 回路の描画 (任意)
+print("\nQuantum Circuit:")
+print(qc.draw(output='text'))
+# 回路の画像を保存
+#qc.draw(output='mpl', filename='grover_circuit.png')
