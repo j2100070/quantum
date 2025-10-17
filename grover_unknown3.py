@@ -78,49 +78,62 @@ def check_oracle_solution(ans_bit): # 出力されたビット列がオラクル
         print("解なし")
         return False
     
-    
+def add_repetition_dict(repetition_dict, r):
+    """繰り返し回数を辞書に追加する関数"""
+    if r in repetition_dict:
+        repetition_dict[r] += 1
+    else:
+        repetition_dict[r] = 1    
      
 n = 10 # 量子ビットの数
 N = 2**n 
-r = 0
-# groverのコード    
-while True:
-    q = QuantumRegister(n+1, "q")
+
+SHOTS = 1
+
+REPETITION= 10
+repetition_dict  = {}
+# groverのコード
+for i in range (REPETITION): 
+    r = 0  
+    while True:
+        q = QuantumRegister(n+1, "q")
 
 
-    c = ClassicalRegister(n+1, "c")
-    # 量子回路の作成
-    qc = QuantumCircuit(q, c)
+        c = ClassicalRegister(n+1, "c")
+        # 量子回路の作成
+        qc = QuantumCircuit(q, c)
 
 
-    qc.x(q[0])
+        qc.x(q[0])
 
 
-    for i in range(n+1):
-        # スーパーポジションを作成
-        qc.h(q[i])
-        
-    for i in range(2**(r)):    
-        grover_operator(qc) # グローバーオペレーターを適用
+        for i in range(n+1):
+            # スーパーポジションを作成
+            qc.h(q[i])
             
-    #測定        
-    for i in range(n):
-        qc.measure(q[i+1], c[i+1])                    
+        for i in range(2**(r)):    
+            grover_operator(qc) # グローバーオペレーターを適用
+                
+        #測定        
+        for i in range(n):
+            qc.measure(q[i+1], c[i+1])                    
 
 
-    # 量子回路の実行
-    backend = BasicAer.get_backend('qasm_simulator')
-    job = execute(qc, backend, shots=1)
-    result = job.result()
-    # 結果の取得と表示
-    counts = result.get_counts(qc)
-    print("\nMeasurement results:")
-    print(counts)
-    # 解の確認
-    if check_oracle_solution((list(counts.keys())[0])):
-        print(f"Solution found after {2**r} iterations: {list(counts.keys())[0]}")
-        break
-    else:
-        print(f"No solution found after {2**r} iterations, continue...")
-        r += 1
-    
+        # 量子回路の実行
+        backend = BasicAer.get_backend('qasm_simulator')
+        job = execute(qc, backend, shots=SHOTS)
+        result = job.result()
+        # 結果の取得と表示
+        counts = result.get_counts(qc)
+        print("\nMeasurement results:")
+        print(counts)
+        # 解の確認
+        if check_oracle_solution((list(counts.keys())[0])):
+            print(f"Solution found after {2**r} iterations: {list(counts.keys())[0]}")
+            add_repetition_dict(repetition_dict, 2**r)
+            break
+        else:
+            print(f"No solution found after {2**r} iterations, continue...")
+            r += 1
+            
+print(f"Repetition dictionary: {repetition_dict}")            

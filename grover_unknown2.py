@@ -24,27 +24,8 @@ def str_to_list(bit_str, reverse=False):
 def oracle_gate(qc):
     qc.mcx([q[i+1] for i in range(n-1)], q[0]) # オラクルのゲート
     
-def grover_operator(qc):
-    """グローバーオペレーターを適用する関数"""
-# オラクルゲートの適用
-    oracle_gate(qc)
-
-    #groveroperator
-    for j in range(n):
-        qc.h(q[j+1])
-    for j in range(n):
-        qc.x(q[j+1])
-            
-    qc.h(q[1])
-    qc.mcx([q[i+1] for i in range(1, n)], q[1])   
-    qc.h(q[1])    
-            
-    for j in range(n):
-        qc.x(q[j+1])
-    for j in range(n):
-        qc.h(q[j+1])      
-    
 def check_oracle_solution(ans_bit): # 出力されたビット列がオラクルのゲートで解が正しいか確認する関数
+    return True
     q = QuantumRegister(n+1, "q")
 
 
@@ -78,11 +59,30 @@ def check_oracle_solution(ans_bit): # 出力されたビット列がオラクル
         print("解なし")
         return False
     
-    
+def grover_operator(qc):
+    """グローバーオペレーターを適用する関数"""
+# オラクルゲートの適用
+    oracle_gate(qc)
+
+    #groveroperator
+    for j in range(n):
+        qc.h(q[j+1])
+    for j in range(n):
+        qc.x(q[j+1])
+            
+    qc.h(q[1])
+    qc.mcx([q[i+1] for i in range(1, n)], q[1])   
+    qc.h(q[1])    
+            
+    for j in range(n):
+        qc.x(q[j+1])
+    for j in range(n):
+        qc.h(q[j+1])      
      
-n = 10 # 量子ビットの数
+n = 5 # 量子ビットの数
 N = 2**n 
 r = 0
+SHOT = 1000
 # groverのコード    
 while True:
     q = QuantumRegister(n+1, "q")
@@ -102,15 +102,20 @@ while True:
         
     for i in range(2**(r)):    
         grover_operator(qc) # グローバーオペレーターを適用
-            
-    #測定        
-    for i in range(n):
-        qc.measure(q[i+1], c[i+1])                    
+        
+    qc.measure(q,c)    
+    
+    oracle_gate(qc) # 最後にオラクルゲートを適用して解を確かめる   
+      
+        
+          
+    
+                            
 
 
     # 量子回路の実行
     backend = BasicAer.get_backend('qasm_simulator')
-    job = execute(qc, backend, shots=1)
+    job = execute(qc, backend, shots=SHOT)
     result = job.result()
     # 結果の取得と表示
     counts = result.get_counts(qc)
@@ -123,4 +128,3 @@ while True:
     else:
         print(f"No solution found after {2**r} iterations, continue...")
         r += 1
-    

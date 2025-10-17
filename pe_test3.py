@@ -6,6 +6,8 @@ from qiskit.circuit.library import UnitaryGate
 from qiskit.visualization import plot_histogram # 結果をプロットするためにインポート
 import matplotlib.pyplot as plt # プロット表示のためにインポート
 
+#量子位相推定のコード
+
 # グローバル変数として qc と qrB を定義
 m = 4
 qrB = QuantumRegister(m, "qrB")
@@ -22,7 +24,8 @@ def qft(dag=False):
 
 
 # 行列 A の定義
-A = np.array([[1,0],[0,(-1)*1j]])
+A = np.array([[1,0],[0,1j]])
+#A = np.array([[0,(-1)*(1j)],[(1j),0]])
 gate = UnitaryGate(A)
 cgate = gate.control(1)
 # m, M = 4, 16 # m は既にグローバルで定義済みなのでコメントアウト、Mは未使用
@@ -41,7 +44,8 @@ crA = ClassicalRegister(1, "crA")
 # 量子回路の作成 (クラシカルレジスターも追加)
 qc = QuantumCircuit(qrB, qrA, crB, crA)
 
-qc.x(qrA[0])
+#|u>=|1>にする
+qc.y(qrA[0])
 
 #HHLの一部（位相推定）を適用
 for i in range(m):
