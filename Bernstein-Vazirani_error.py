@@ -3,6 +3,7 @@ from qiskit import QuantumCircuit
 from qiskit_aer import AerSimulator
 from qiskit_aer.noise import NoiseModel, depolarizing_error
 from qiskit.visualization import plot_histogram
+import math
 
 def create_noise_model(error_prob: float) -> NoiseModel:
     """
@@ -20,7 +21,7 @@ def create_noise_model(error_prob: float) -> NoiseModel:
     gate_error = depolarizing_error(error_prob, 1)
     
     # 'h' と 'id' ゲートにエラーを追加
-    noise_model.add_all_qubit_quantum_error(gate_error, ['h', 'id'])
+    noise_model.add_all_qubit_quantum_error(gate_error, ['h', 'id', 'z'])
     
     print(f"作成したノイズモデル:\n{noise_model}\n")
     return noise_model
@@ -37,7 +38,7 @@ def build_bernstein_vazirani_circuit(s: str) -> QuantumCircuit:
     """
     print("--- 2. Bernstein-Vazirani回路を構築中... ---")
     n = len(s)
-    qc = QuantumCircuit(n + 1, n)
+    qc = QuantumCircuit(n , n)
 
     # --- Oracleの定義 ---
     def oracle(qc):
@@ -48,8 +49,6 @@ def build_bernstein_vazirani_circuit(s: str) -> QuantumCircuit:
                 qc.id(i)    
 
     # --- アルゴリズム本体 ---
-    qc.x(n)
-    qc.h(n)
     for i in range(n):
         qc.h(i)
     qc.barrier()
@@ -85,6 +84,19 @@ def run_simulation(qc: QuantumCircuit, noise_model: NoiseModel, shots: int) -> d
     print("シミュレーションが完了しました。\n")
     return counts
 
+def theorical_ratio(SECRET_STRING: str, ERROR_PROBABILITY: float = 0.0):
+    """
+    理論的な結果の比率を表示する。
+    """
+    SECRET_STRING_LENGTH = len(SECRET_STRING)
+    print(SECRET_STRING_LENGTH)
+    alpha = math.pow((1-ERROR_PROBABILITY), 3)
+    beta = (ERROR_PROBABILITY * (ERROR_PROBABILITY**2 - 3*ERROR_PROBABILITY + 3)) / 2
+    answer = pow(alpha+beta, SECRET_STRING_LENGTH) 
+    print("理論的な正答確率",answer)
+    
+    
+
 def main():
     """
     スクリプト全体の実行フローを管理する。
@@ -117,8 +129,11 @@ def main():
     # 4. シミュレーションを実行
     counts = run_simulation(circuit, noise, SHOTS)
     print("ノイズありの実行結果:", counts)
+    
+    # 5.理論値の表示
+    theorical_ratio(SECRET_STRING, ERROR_PROBABILITY)
 
-    # 5. 結果をヒストグラムで描画・表示 (コンソール環境などでは表示されない場合があります)
+    # 6. 結果をヒストグラムで描画・表示 (コンソール環境などでは表示されない場合があります)
     print("\n--- 実行結果のヒストグラム ---")
     try:
         plot_histogram(counts, title='ノイズモデルありの実行結果')
@@ -126,6 +141,8 @@ def main():
     except ImportError as e:
          print(f"ヒストグラムの描画に失敗しました (matplotlibが必要): {e}")
     print("--------------------------")
+    
+    
 
 
 if __name__ == "__main__":
