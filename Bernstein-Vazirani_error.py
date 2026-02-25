@@ -1,8 +1,10 @@
+# qiskit1.0以上のimportに対応
 import matplotlib.pyplot as plt
 from qiskit import QuantumCircuit
 from qiskit_aer import AerSimulator
 from qiskit_aer.noise import NoiseModel, depolarizing_error
 from qiskit.visualization import plot_histogram
+from matplotlib import font_manager
 import math
 
 def create_noise_model(error_prob: float) -> NoiseModel:
@@ -51,9 +53,7 @@ def build_bernstein_vazirani_circuit(s: str) -> QuantumCircuit:
     # --- アルゴリズム本体 ---
     for i in range(n):
         qc.h(i)
-    qc.barrier()
     oracle(qc)
-    qc.barrier()
     for i in range(n):
         qc.h(i)
     
@@ -103,9 +103,8 @@ def main():
     """
     # --- パラメータ設定 ---
     SECRET_STRING = '1011'
-
     ERROR_PROBABILITY = 0.05
-    SHOTS = 10000000
+    SHOTS = 100000
     
     print(f"秘密のビット列 (s): {SECRET_STRING}")
     print(f"エラー確率: {ERROR_PROBABILITY*100}%\n")
@@ -116,10 +115,13 @@ def main():
     # 2. 量子回路を構築
     circuit = build_bernstein_vazirani_circuit(SECRET_STRING)
 
-    # 3. 回路図を描画・表示 (コンソール環境などでは表示されない場合があります)
+    # 3. 回路図を描画・表示
     print("--- 量子回路図 ---")
     try:
         circuit.draw('mpl')
+        plt.rcParams['font.family'] = 'Hiragino Sans'
+        fig = circuit.draw('mpl')  # matplotlibのFigureを取得
+        fig.suptitle(f"Bernstein-Vazirani 回路（s={SECRET_STRING}）", fontsize=14, fontweight='bold')
         plt.show()
     except ImportError as e:
         print(f"回路図の描画に失敗しました (matplotlibが必要): {e}")
@@ -132,14 +134,19 @@ def main():
     
     # 5.理論値の表示
     theorical_ratio(SECRET_STRING, ERROR_PROBABILITY)
-
-    # 6. 結果をヒストグラムで描画・表示 (コンソール環境などでは表示されない場合があります)
+    
+    # 6. 結果をヒストグラムで描画・表示
     print("\n--- 実行結果のヒストグラム ---")
     try:
-        plot_histogram(counts, title='ノイズモデルありの実行結果')
+        plt.rcParams['font.family'] = 'Hiragino Sans'
+
+        normalized_counts = {k: v / SHOTS for k, v in counts.items()}
+
+        plot_histogram(normalized_counts, title='ノイズモデルありの実行結果')
+        plt.ylabel("確率")
         plt.show()
     except ImportError as e:
-         print(f"ヒストグラムの描画に失敗しました (matplotlibが必要): {e}")
+        print(f"ヒストグラムの描画に失敗しました (matplotlibが必要): {e}")
     print("--------------------------")
     
     
